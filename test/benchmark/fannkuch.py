@@ -16,8 +16,7 @@ def fannkuch(n):
     rxrange = range(2, n - 1)
     nm = n - 1
     while 1:
-        k = perm1[0]
-        if k:
+        if k := perm1[0]:
             perm = perm1[:]
             flipsCount = 1
             kk = perm[k]

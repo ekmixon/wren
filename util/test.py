@@ -23,7 +23,7 @@ config = args.suffix.lstrip('_d')
 is_debug = args.suffix.startswith('_d')
 
 WREN_DIR = dirname(dirname(realpath(__file__)))
-WREN_APP = join(WREN_DIR, 'bin', 'wren_test' + args.suffix)
+WREN_APP = join(WREN_DIR, 'bin', f'wren_test{args.suffix}')
 
 WREN_APP_WITH_EXT = WREN_APP
 if platform.system() == "Windows":
@@ -89,29 +89,25 @@ class Test:
           line_num += 1
           continue
 
-        match = EXPECT_PATTERN.search(line)
-        if match:
+        if match := EXPECT_PATTERN.search(line):
           self.output.append((match.group(1), line_num))
           expectations += 1
 
-        match = EXPECT_ERROR_PATTERN.search(line)
-        if match:
+        if match := EXPECT_ERROR_PATTERN.search(line):
           self.compile_errors.add(line_num)
 
           # If we expect a compile error, it should exit with WREN_EX_DATAERR.
           self.exit_code = 65
           expectations += 1
 
-        match = EXPECT_ERROR_LINE_PATTERN.search(line)
-        if match:
+        if match := EXPECT_ERROR_LINE_PATTERN.search(line):
           self.compile_errors.add(int(match.group(1)))
 
           # If we expect a compile error, it should exit with WREN_EX_DATAERR.
           self.exit_code = 65
           expectations += 1
 
-        match = EXPECT_RUNTIME_ERROR_PATTERN.search(line)
-        if match:
+        if match := EXPECT_RUNTIME_ERROR_PATTERN.search(line):
           self.runtime_error_line = line_num
           self.runtime_error_message = match.group(2)
           # If the runtime error isn't handled, it should exit with WREN_EX_SOFTWARE.
@@ -119,19 +115,15 @@ class Test:
             self.exit_code = 70
           expectations += 1
 
-        match = STDIN_PATTERN.search(line)
-        if match:
+        if match := STDIN_PATTERN.search(line):
           input_lines.append(match.group(1))
 
-        match = SKIP_PATTERN.search(line)
-        if match:
+        if match := SKIP_PATTERN.search(line):
           num_skipped += 1
           skipped[match.group(1)] += 1
           return False
 
-        # Not a test file at all, so ignore it.
-        match = NONTEST_PATTERN.search(line)
-        if match:
+        if match := NONTEST_PATTERN.search(line):
           return False
 
         line_num += 1
@@ -240,8 +232,7 @@ class Test:
     # Validate that every compile error was expected.
     found_errors = set()
     for line in error_lines:
-      match = ERROR_PATTERN.search(line)
-      if match:
+      if match := ERROR_PATTERN.search(line):
         error_line = float(match.group(1))
         if error_line in self.compile_errors:
           found_errors.add(error_line)
@@ -300,10 +291,7 @@ def color_text(text, color):
   color, if supported."""
 
   # No ANSI escapes on Windows.
-  if sys.platform == 'win32':
-    return str(text)
-
-  return color + str(text) + '\033[0m'
+  return str(text) if sys.platform == 'win32' else color + str(text) + '\033[0m'
 
 
 def green(text):  return color_text(text, '\033[32m')
@@ -322,7 +310,7 @@ def walk(dir, callback, ignored=None):
   ignored += [".",".."]
 
   dir = abspath(dir)
-  for file in [file for file in listdir(dir) if not file in ignored]:
+  for file in [file for file in listdir(dir) if file not in ignored]:
     nfile = join(dir, file)
     if isdir(nfile):
       walk(nfile, callback)
@@ -355,8 +343,9 @@ def run_script(app, path, type):
       return
 
   # Update the status line.
-  print_line('({}) Passed: {} Failed: {} Skipped: {} '.format(
-      relpath(app, WREN_DIR), green(passed), red(failed), yellow(num_skipped)))
+  print_line(
+      f'({relpath(app, WREN_DIR)}) Passed: {green(passed)} Failed: {red(failed)} Skipped: {yellow(num_skipped)} '
+  )
 
   # Make a nice short path relative to the working directory.
 
@@ -381,7 +370,7 @@ def run_script(app, path, type):
     print_line(red('FAIL') + ': ' + path)
     print('')
     for failure in test.failures:
-      print('      ' + pink(failure))
+      print(f'      {pink(failure)}')
     print('')
 
 
@@ -410,13 +399,13 @@ walk(join(WREN_DIR, 'example'), run_example)
 
 print_line()
 if failed == 0:
-  print('All ' + green(passed) + ' tests passed (' + str(expectations) +
-        ' expectations).')
+  print((f'All {green(passed)} tests passed ({str(expectations)}' +
+         ' expectations).'))
 else:
-  print(green(passed) + ' tests passed. ' + red(failed) + ' tests failed.')
+  print(f'{green(passed)} tests passed. {red(failed)} tests failed.')
 
 for key in sorted(skipped.keys()):
-  print('Skipped ' + yellow(skipped[key]) + ' tests: ' + key)
+  print(f'Skipped {yellow(skipped[key])} tests: {key}')
 
 if failed != 0:
   sys.exit(1)

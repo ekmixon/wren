@@ -42,8 +42,7 @@ def add_file(filename):
   out.write('// Begin file "{0}"\n'.format(bname))
   with open(filename, 'r') as f:
     for line in f:
-      m = INCLUDE_PATTERN.match(line)
-      if m:
+      if m := INCLUDE_PATTERN.match(line):
         add_file(find_file(m.group(1)))
       else:
         out.write(line)

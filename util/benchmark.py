@@ -139,10 +139,7 @@ def standard_deviation(times):
   mean = sum(times) / len(times)
 
   # Sum the squares of the differences from the mean.
-  result = 0
-  for time in times:
-    result += (time - mean) ** 2
-
+  result = sum((time - mean) ** 2 for time in times)
   return math.sqrt(result / len(times))
 
 
@@ -162,13 +159,11 @@ def run_trial(benchmark, language):
   except OSError:
     print('Interpreter was not found')
     return None
-  match = benchmark[1].match(out)
-  if match:
+  if match := benchmark[1].match(out):
     return float(match.group(1))
-  else:
-    print("Incorrect output:")
-    print(out)
-    return None
+  print("Incorrect output:")
+  print(out)
+  return None
 
 
 def run_benchmark_language(benchmark, language, benchmark_result):
@@ -184,11 +179,11 @@ def run_benchmark_language(benchmark, language, benchmark_result):
 
   bpath = os.path.join(BENCHMARK_DIR, benchmark[0] + language[2])
   if not os.path.exists(bpath):
-    print("No implementation for this language: " + bpath)
+    print(f"No implementation for this language: {bpath}")
     return
 
   times = []
-  for i in range(0, NUM_TRIALS):
+  for _ in range(NUM_TRIALS):
     sys.stdout.flush()
     time = run_trial(benchmark, language)
     if not time:
@@ -201,15 +196,15 @@ def run_benchmark_language(benchmark, language, benchmark_result):
 
   comparison = ""
   if language[0] == "wren":
-    if benchmark[2] != None:
+    if benchmark[2] is None:
+      comparison = "no baseline"
+    else:
       ratio = 100 * score / benchmark[2]
       comparison =  "{:6.2f}% relative to baseline".format(ratio)
       if ratio > 105:
         comparison = green(comparison)
       if ratio < 95:
         comparison = red(comparison)
-    else:
-      comparison = "no baseline"
   else:
     # Hack: assumes wren gets run first.
     wren_score = benchmark_result["wren"]["score"]
@@ -280,14 +275,11 @@ def read_baseline():
   baseline_file = os.path.join(BENCHMARK_DIR, "baseline.txt")
   if os.path.exists(baseline_file):
     with open(baseline_file) as f:
-      for line in f.readlines():
+      for line in f:
         name, best = line.split(",")
         for benchmark in BENCHMARKS:
           if benchmark[0] == name:
-            if not best.startswith("None"):
-              benchmark[2] = float(best)
-            else:
-              benchmark[2] = 0.0
+            benchmark[2] = 0.0 if best.startswith("None") else float(best)
 
 
 def generate_baseline():
@@ -295,7 +287,7 @@ def generate_baseline():
   baseline_text = ""
   for benchmark in BENCHMARKS:
     best = run_benchmark_language(benchmark, LANGUAGES[0], {})
-    baseline_text += ("{},{}\n".format(benchmark[0], best))
+    baseline_text += f"{benchmark[0]},{best}\n"
 
   # Write them to a file.
   baseline_file = os.path.join(BENCHMARK_DIR, "baseline.txt")

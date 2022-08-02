@@ -27,7 +27,7 @@ else:
   print("Using premake from 'WREN_PREMAKE' env ...")
 
 def run_premake(action, os):
-  run([premake, action, "--os=" + os], cwd=PREMAKE_DIR)
+  run([premake, action, f"--os={os}"], cwd=PREMAKE_DIR)
 
 try:
 
@@ -41,7 +41,7 @@ try:
 except Exception as e:
 
   print("Unable to run premake, while trying the binary '" + premake + "' ...")
-  print("  reason: " + str(e))
+  print(f"  reason: {str(e)}")
   print("\nIf premake can't be found, possible options are:")
   print("- Set the env variable 'WREN_PREMAKE' to the path to a premake binary")
   print("- Place a premake5 binary for your host platform in projects/premake")

@@ -41,7 +41,7 @@ def c_metrics(label, directories):
   num_empty = 0
 
   for directory in directories:
-    files = glob.iglob(directory + "/*.[ch]")
+    files = glob.iglob(f"{directory}/*.[ch]")
     for source_path in files:
       num_files += 1
 
@@ -62,7 +62,7 @@ def c_metrics(label, directories):
           # Don't count { or } lines since Wren's coding style puts them on
           # their own lines but they don't add anything meaningful to the
           # length of the program.
-          if stripped == "" or stripped == "{" or stripped == "}":
+          if stripped in ["", "{", "}"]:
             num_empty += 1
             continue
 

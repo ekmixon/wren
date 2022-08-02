@@ -75,17 +75,10 @@ animals = [
 keys = []
 for animal in animals:
   for adjective in adjectives:
-    for adverb in adverbs:
-      keys.append(adverb + " " + adjective + " " + animal)
-
+    keys.extend(f"{adverb} {adjective} {animal}" for adverb in adverbs)
 start = time.process_time()
 
-map = {}
-i = 0
-for key in keys:
-  map[key] = i
-  i += 1
-
+map = {key: i for i, key in enumerate(keys)}
 sum = 0
 for key in keys:
   sum = sum + map[key]
@@ -94,4 +87,4 @@ for key in keys:
   del map[key]
 
 print(sum)
-print("elapsed: " + str(time.process_time() - start))
+print(f"elapsed: {str(time.process_time() - start)}")

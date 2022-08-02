@@ -63,10 +63,7 @@ def ensure_dir(path):
 
 
 def is_up_to_date(path, out_path):
-  dest_mod = 0
-  if os.path.exists(out_path):
-    dest_mod = os.path.getmtime(out_path)
-
+  dest_mod = os.path.getmtime(out_path) if os.path.exists(out_path) else 0
   # See if it's up to date.
   source_mod = os.path.getmtime(path)
   return source_mod < dest_mod
@@ -74,7 +71,7 @@ def is_up_to_date(path, out_path):
 
 def format_file(path, skip_up_to_date):
   in_path = os.path.join('doc/site', path)
-  out_path = "build/docs/" + os.path.splitext(path)[0] + ".html"
+  out_path = f"build/docs/{os.path.splitext(path)[0]}.html"
   template_path = os.path.join("doc/site", os.path.dirname(path),
       "template.html")
 
@@ -142,7 +139,7 @@ def format_file(path, skip_up_to_date):
   with codecs.open(out_path, "w", encoding="utf-8") as out:
     out.write(page_template.format(**fields))
 
-  print("Built " + path)
+  print(f"Built {path}")
 
 def copy_static():
   shutil.copy2("doc/site/blog/rss.xml", "build/docs/blog/rss.xml")
@@ -160,7 +157,7 @@ def copy_static():
         return
 
       shutil.copy2(source, dest)
-      print('Copied ' + filename)
+      print(f'Copied {filename}')
 
 def format_files(skip_up_to_date):
 
@@ -188,12 +185,11 @@ ensure_dir("build/docs")
 # Process each markdown file.
 format_files(False)
 
-# Watch and serve files.
-if len(sys.argv) == 2 and sys.argv[1] == '--serve':
-  run_server()
+if len(sys.argv) == 2:
+  if sys.argv[1] == '--serve':
+    run_server()
 
-# Watch files.
-if len(sys.argv) == 2 and sys.argv[1] == '--watch':
-  while True:
-    format_files(True)
-    time.sleep(0.3)
+  if sys.argv[1] == '--watch':
+    while True:
+      format_files(True)
+      time.sleep(0.3)

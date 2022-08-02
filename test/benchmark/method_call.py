@@ -40,7 +40,7 @@ def main():
 
     val = 1
     toggle = Toggle(val)
-    for i in range(0,NUM):
+    for _ in range(NUM):
         val = toggle.activate().value()
         val = toggle.activate().value()
         val = toggle.activate().value()
@@ -58,7 +58,7 @@ def main():
 
     val = 1
     ntoggle = NthToggle(val, 3)
-    for i in range(0,NUM):
+    for _ in range(NUM):
         val = ntoggle.activate().value()
         val = ntoggle.activate().value()
         val = ntoggle.activate().value()
@@ -74,7 +74,7 @@ def main():
     else:
         print("false")
 
-    print("elapsed: " + str(time.process_time() - start))
+    print(f"elapsed: {str(time.process_time() - start)}")
 
 
 main()

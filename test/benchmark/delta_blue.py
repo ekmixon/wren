@@ -54,17 +54,11 @@ class Strength(object):
 
     @classmethod
     def weakest_of(cls, s1, s2):
-        if cls.weaker(s1, s2):
-            return s1
-
-        return s2
+        return s1 if cls.weaker(s1, s2) else s2
 
     @classmethod
     def strongest(cls, s1, s2):
-        if cls.stronger(s1, s2):
-            return s1
-
-        return s2
+        return s1 if cls.stronger(s1, s2) else s2
 
     def next_weaker(self):
         strengths = {
@@ -148,11 +142,10 @@ class UrnaryConstraint(Constraint):
         self.satisfied = False
 
     def choose_method(self, mark):
-        if self.my_output.mark != mark and \
-           Strength.stronger(self.strength, self.my_output.walk_strength):
-            self.satisfied = True
-        else:
-            self.satisfied = False
+        self.satisfied = bool(
+            self.my_output.mark != mark
+            and Strength.stronger(self.strength, self.my_output.walk_strength)
+        )
 
     def is_satisfied(self):
         return self.satisfied
@@ -235,15 +228,16 @@ class BinaryConstraint(Constraint):
                 self.direction = Direction.NONE
 
         if Strength.weaker(self.v1.walk_strength, self.v2.walk_strength):
-            if Strength.stronger(self.strength, self.v1.walk_strength):
-                self.direction = Direction.BACKWARD
-            else:
-                self.direction = Direction.NONE
+            self.direction = (
+                Direction.BACKWARD
+                if Strength.stronger(self.strength, self.v1.walk_strength)
+                else Direction.NONE
+            )
+
+        elif Strength.stronger(self.strength, self.v2.walk_strength):
+            self.direction = Direction.FORWARD
         else:
-            if Strength.stronger(self.strength, self.v2.walk_strength):
-                self.direction = Direction.FORWARD
-            else:
-                self.direction = Direction.BACKWARD
+            self.direction = Direction.BACKWARD
 
     def add_to_graph(self):
         self.v1.add_constraint(self)
@@ -257,16 +251,10 @@ class BinaryConstraint(Constraint):
         self.input().mark = mark
 
     def input(self):
-        if self.direction == Direction.FORWARD:
-            return self.v1
-
-        return self.v2
+        return self.v1 if self.direction == Direction.FORWARD else self.v2
 
     def output(self):
-        if self.direction == Direction.FORWARD:
-            return self.v2
-
-        return self.v1
+        return self.v2 if self.direction == Direction.FORWARD else self.v1
 
     def recalculate(self):
         ihn = self.input()
@@ -282,7 +270,7 @@ class BinaryConstraint(Constraint):
 
     def inputs_known(self, mark):
         i = self.input()
-        return i.mark == mark or i.stay or i.determined_by == None
+        return i.mark == mark or i.stay or i.determined_by is None
 
     def remove_from_graph(self):
         if self.v1 is not None:
@@ -354,10 +342,7 @@ class Variable(object):
 
     def __repr__(self):
         # To make debugging this beast from pdb easier...
-        return '<Variable: %s - %s>' % (
-            self.name,
-            self.value
-        )
+        return f'<Variable: {self.name} - {self.value}>'
 
     def add_constraint(self, constraint):
         self.constraints.append(constraint)
@@ -419,18 +404,12 @@ class Planner(object):
         return plan
 
     def extract_plan_from_constraints(self, constraints):
-        sources = []
-
-        for c in constraints:
-            if c.is_input() and c.is_satisfied():
-                sources.append(c)
+        sources = [c for c in constraints if c.is_input() and c.is_satisfied()]
 
         return self.make_plan(sources)
 
     def add_propagate(self, c, mark):
-        todo = []
-        todo.append(c)
-
+        todo = [c]
         while len(todo):
             d = todo.pop(0)
 
@@ -448,16 +427,11 @@ class Planner(object):
         out.walk_strength = Strength.WEAKEST
         out.stay = True
         unsatisfied = []
-        todo = []
-        todo.append(out)
-
+        todo = [out]
         while len(todo):
             v = todo.pop(0)
 
-            for c in v.constraints:
-                if not c.is_satisfied():
-                    unsatisfied.append(c)
-
+            unsatisfied.extend(c for c in v.constraints if not c.is_satisfied())
             determining = v.determined_by
 
             for c in v.constraints:
@@ -523,7 +497,7 @@ def chain_test(n):
 
     # We need to go up to n inclusively.
     for i in range(n + 1):
-        name = "v%s" % i
+        name = f"v{i}"
         v = Variable(name)
 
         if prev is not None:
@@ -539,8 +513,7 @@ def chain_test(n):
 
     StayConstraint(last, Strength.STRONG_DEFAULT)
     edit = EditConstraint(first, Strength.PREFERRED)
-    edits = []
-    edits.append(edit)
+    edits = [edit]
     plan = planner.extract_plan_from_constraints(edits)
 
     for i in range(100):
@@ -570,8 +543,8 @@ def projection_test(n):
     dests = []
 
     for i in range(n):
-        src = Variable("src%s" % i, i)
-        dst = Variable("dst%s" % i, i)
+        src = Variable(f"src{i}", i)
+        dst = Variable(f"dst{i}", i)
         dests.append(dst)
         StayConstraint(src, Strength.NORMAL)
         ScaleConstraint(src, scale, offset, dst, Strength.REQUIRED)
@@ -606,12 +579,10 @@ def projection_test(n):
 def change(v, new_value):
     global planner
     edit = EditConstraint(v, Strength.PREFERRED)
-    edits = []
-    edits.append(edit)
-
+    edits = [edit]
     plan = planner.extract_plan_from_constraints(edits)
 
-    for i in range(10):
+    for _ in range(10):
         v.value = new_value
         plan.execute()
 
@@ -626,11 +597,11 @@ planner = None
 def delta_blue():
     global total
     start = time.process_time()
-    for i in range(40):
+    for _ in range(40):
         chain_test(100)
         projection_test(100)
     print(total)
-    print("elapsed: " + str(time.process_time() - start))
+    print(f"elapsed: {str(time.process_time() - start)}")
 
 
 if __name__ == '__main__':
